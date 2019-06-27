@@ -1,6 +1,14 @@
 ==============================================================================
 cLHS
 ==============================================================================
+
+.. module:: clhs
+	:synopsis: Conditioned Latin Hypercube Sampling in Python
+
+.. moduleauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
+.. sectionauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
+
+
 Conditioned Latin Hypercube Sampling in Python.
 
 This code is based on the conditioned LHS method of
