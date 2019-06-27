@@ -3,7 +3,6 @@ cLHS
 ==============================================================================
 
 .. module:: clhs
-	:synopsis: Conditioned Latin Hypercube Sampling in Python
 
 .. moduleauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
 .. sectionauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
