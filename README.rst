@@ -3,8 +3,8 @@ cLHS
 ==============================================================================
 
 .. image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
-:target: https://clhs-py.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+   :target: https://clhs-py.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 .. module:: clhs
 
