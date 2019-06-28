@@ -2,11 +2,16 @@
 cLHS
 ==============================================================================
 
+.. image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
+:target: https://clhs-py.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
+
 .. module:: clhs
 
 .. moduleauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
 .. sectionauthor:: Erika Wagoner <wagoner47+clhs@email.arizona.edu>
 
+.. include-marker-do-not-remove
 
 Conditioned Latin Hypercube Sampling in Python.
 
