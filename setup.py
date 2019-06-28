@@ -3,7 +3,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import conditioned_latin_hypercube_sampling as clhs
+import clhs
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -28,5 +28,6 @@ setup(
     description="Conditioned Latin Hypercube Sampling in Python",
     long_description=long_description,
     license="MIT",
-    classifiers=classifiers
+    classifiers=classifiers,
+    install_requires=['healpy', 'astropy', 'tqdm', 'numpy']
     )
