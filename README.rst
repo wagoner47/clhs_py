@@ -13,6 +13,12 @@ cLHS
 
 .. include-marker-do-not-remove
 
+.. image:: https://img.shields.io/badge/GitHub-clhs__py-informational.svg
+   :target: https://github.com/wagoner47/clhs_py
+
+.. image:: https://img.shields.io/github/license/wagoner47/clhs_py.svg
+   :target: https://github.com/wagoner47/clhs_py/blob/master/LICENSE.rst
+
 Conditioned Latin Hypercube Sampling in Python.
 
 This code is based on the conditioned LHS method of
