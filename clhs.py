@@ -10,18 +10,19 @@ https://github.com/cran/clhs), but did not implement the cost option of their
 code, nor the DLHS option of Minasny & McBratney (2010)
 """
 import numpy as np
+import pandas as pd
 import copy
 import warnings
 
 __all__ = ["get_strata", "get_correlation_matrix", "get_random_samples",
            "counts_matrix", "continuous_objective_func",
            "correlation_objective_func", "clhs_objective_func",
-           "resample_random", "resample_worst", "clhs"]
+           "resample_random", "resample_worst", "resample", "clhs"]
 __author__ = "Erika Wagoner"
 __copyright__ = "Copyright 2019, Erika Wagoner"
 __credits__ = ["Erika Wagoner"]
 __license__ = "MIT"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __maintainer__ = "Erika Wagoner"
 __email__ = "wagoner47+clhs@email.arizona.edu"
 __status__ = "Development"
@@ -39,18 +40,18 @@ def get_strata(predictors, num_samples, good_mask=None):
     ----------
     predictors : array-like (Nrows,) or (Nrows, Npredictors)
         The input data to stratify, which may be 1D or 2D
-    num_samples : `int`
+    num_samples : ``int``
         The number of samples being drawn, which is the number of strata that
         will be created. Must be at least 1, but should be less than the
         number of rows in ``predictors``
     good_mask : array-like[`bool`] (Nrows,), optional
         A mask for selecting data, where `True` indicates good data and `False`
-        indicates data to be excluded. If `None` (default), all data is assumed
-        to be good
+        indicates data to be excluded. If ``None`` (default), all data is
+        assumed to be good
 
     Returns
     -------
-    strata : :class:`numpy.ndarray`[`float`]
+    strata : :class:`numpy.ndarray`[``float``]
         The edges of the strata. If ``predictors`` is 1D, the result is also 1D
         with size ``num_samples + 1``. Otherwise, the shape is
         (``num_samples + 1``, Npredictors)
@@ -63,16 +64,22 @@ def get_strata(predictors, num_samples, good_mask=None):
 
     num_samples = int(num_samples)
     if good_mask is None:
-        good_mask = np.ones(np.shape(np.squeeze(predictors))[0], dtype=bool)
+        good_mask = np.ones(np.squeeze(predictors).shape[0], dtype=bool)
     if num_samples < 1:
         raise ValueError("Invalid number of samples: {}".format(num_samples))
-    if np.ndim(np.squeeze(predictors)) == 1:
-        return np.quantile(np.squeeze(predictors)[good_mask],
-                           np.linspace(0, 1, num=(num_samples + 1)))
+    # Define the edges of the strata
+    strata_edges = np.linspace(0, 1, num=(num_samples + 1))
+    # For compatability with numpy versions before 1.15:
+    if not hasattr(np, "quantile"):
+        ## no quantile function, use percentile and multiply edges by 100
+        strata_edges *= 100
+        quantile_func = np.percentile
     else:
-        return np.quantile(np.squeeze(predictors)[good_mask],
-                           np.linspace(0, 1, num=(num_samples + 1)),
-                           axis=0)
+        ## use np.quantile
+        quantile_func = np.quantile
+
+    return quantile_func(
+        np.squeeze(predictors)[good_mask], strata_edges, axis=0)
 
 
 def get_correlation_matrix(predictors, good_mask=None):
@@ -87,21 +94,19 @@ def get_correlation_matrix(predictors, good_mask=None):
         have columns (1st axis) corresponding to different predictors
     good_mask : array-like[`bool`] (Nrows,), optional
         A mask for selecting data, where `True` indicates good data and `False`
-        indicates data to be excluded. If `None` (default), all data is assumed
-        to be good
+        indicates data to be excluded. If ``None`` (default), all data is
+        assumed to be good
 
     Returns
     -------
-    corr : `float` or :class:`numpy.ndarray`[`float`] (Npredictors, Npredictors)
+    corr : ``float`` or :class:`numpy.ndarray`[``float``]
         The correlation matrix, which is a scalar when ``predictors`` is 1D or
-        when it's length along the 1st axis is 1
+        when it's length along the 1st axis is 1. The shape for the 2D case is
+        (Npredictors, Npredictors)
     """
     if good_mask is None:
-        good_mask = np.ones(np.shape(np.squeeze(predictors))[0], dtype=bool)
-    if np.ndim(np.squeeze(predictors)) == 1:
-        return np.corrcoef(np.squeeze(predictors)[good_mask])
-    else:
-        return np.corrcoef(np.squeeze(predictors)[good_mask], rowvar=False)
+        good_mask = np.ones(np.squeeze(predictors).shape[0], dtype=bool)
+    return np.corrcoef(np.squeeze(predictors)[good_mask], rowvar=False)
 
 
 def get_random_samples(num_data, num_samples, good_mask=None, include=None):
@@ -113,33 +118,43 @@ def get_random_samples(num_data, num_samples, good_mask=None, include=None):
 
     Parameters
     ----------
-    num_data : `int`
+    num_data : ``int``
         The number of rows (or observations) in the data
-    num_samples : `int`
+    num_samples : ``int``
         The number of samples to draw, which must be less than ``num_data``
     good_mask : array-like[`bool`] (Nrows,), optional
         A mask for selecting data, where `True` indicates good data and `False`
-        indicates indices to be excluded. If `None` (default), all indices are
+        indicates indices to be excluded. If ``None`` (default), all indices are
         assumed to be valid
-    include : `int` or array-like[`int`], optional
+    include : ``int`` or array-like[``int``], optional
         Indices that must be included in the sample, if any
 
     Returns
     -------
-    sampled_indices : :class:`numpy.ndarray`[`int`] (``num_samples``,)
+    sampled_indices : :class:`numpy.ndarray`[``int``] (``num_samples``,)
         The indices included in the random sampling
-    remaining_indices : :class:`numpy.ndarray`[`int`]
+    remaining_indices : :class:`numpy.ndarray`[``int``]
         The indices not in the sampling, which will never contain any indices
         from ``include`` (if given). This will be 1D with length
         ``num_data - num_samples`` if all indices are valid, or
         ``num_data - num_samples - np.count_nonzero(~good_mask)``
         if any indices are masked out
+
+    Raises
+    ------
+    ValueError
+        Raised if ``include`` is not ``None`` and ``num_samples`` is not
+        larger than ``include``
     """
     if good_mask is None:
         good_mask = np.ones(num_data, dtype=bool)
     masked_indices = np.arange(num_data, dtype=int)[good_mask]
     if include is None:
         include = []
+    else:
+        if num_samples <= np.size(include):
+            raise ValueError("num_samples must be larger than the number of"
+                             " indices that must be included")
     always_include_ = np.unique(include).astype(int)
     num_always_include = always_include_.size
     select_size = num_samples - num_always_include
@@ -173,7 +188,7 @@ def counts_matrix(x, quantiles):
 
     Returns
     -------
-    eta : :class:`numpy.ndarray`[`int`] (Nx,) or (Nx, Npredictors)
+    eta : :class:`numpy.ndarray`[``int``] (Nx,) or (Nx, Npredictors)
         The matrix of counts in strata, with the same shape as ``x``
     """
     x_ = np.squeeze(x)
@@ -198,17 +213,17 @@ def continuous_objective_func(x, quantiles):
 
     Parameters
     ----------
-    x : :class:`numpy.ndarray` (Nx,) or (Nx, Npredictors)
-        The sampled predictors, with observations as rows and predictors (if
-        more than 1) as columns
-    quantiles : :class:`numpy.ndarray` (Nx + 1,) or (Nx + 1, Npredictors)
+    x : array-like (Nx,) or (Nx, Ncontinuous)
+        The sampled continuous predictors, with observations as rows and
+        predictors (if more than 1) as columns
+    quantiles : :class:`numpy.ndarray` (Nx + 1,) or (Nx + 1, Ncontinuous)
         The quantiles which mark the edge of strata. The 0th axis must be
         one element longer than the 0th axis of ``x``
 
     Returns
     -------
-    o_in_strata : :class:`numpy.ndarray`[`int`] (Nx,)
-        The objective function value in each of the strata
+    o_in_strata : :class:`numpy.ndarray`[``int``] (Nx,)
+        The continuous variable objective function value in each of the strata
 
     Notes
     -----
@@ -232,7 +247,55 @@ def continuous_objective_func(x, quantiles):
     return np.sum(np.abs(eta - 1), axis=1)
 
 
-def correlation_objective_func(data_corr, x):
+def categorical_objective_func(x, kappa):
+    """Calculate the objective function for categorical predictors
+
+    Parameters
+    ----------
+    x : array-like (Nx,) or (Nx, Ncategorical)
+        The sampled categorical predictors, with observations as rows and
+        predictors (if more than 1) as columns
+    kappa : dict[any, array-like[``float``]]
+        The proportions of each unique category in the full data with
+        Ncategorical key-value pairs. The keys can be anything to index the
+        categorical predictors, but the values are the normalized counts of the
+        unique values of each predictor.
+
+    Returns
+    -------
+    o_categorical : ``float``
+        The contribution to the objective function from the categorical
+        predictors
+
+    Notes
+    -----
+    The objective function for the categorical variables is defined in Minasny &
+    McBratney (2006) [1]_ for :math:`n` samples and :math:`c` classes as
+    .. math::
+
+        O_2 = \sum_{j = 1}^c \left\lvert \frac{\eta\left(x_j\right)}{n}
+              - \kappa_j \right\rvert\: ,
+    where :math:`\eta\left(x_j)` is the number of samples :math:`x` in class
+    :math:`j` and :math:`\kappa_j` is the proportion of class :math:`j` in the
+    full (unsampled) data. Here, 'class' is used in a 1D sense. With multiple
+    categorical predictors, I'm adding a sum over predictors.
+
+    References
+    ----------
+    .. [1] B. Minasny, A. B. McBratney, "A conditioned Latin hypercube method
+    for sampling in the presence of ancillary information", Computers &
+    Geosciences, vol. 32, pp. 1378-1388, 2006.
+    """
+    x_df = pd.DataFrame(data=np.squeeze(x))
+    eta = dict(
+        (column, x_df[column].value_counts(normalize=True)) for column in
+        x_df.columns)
+    return np.array([
+        np.abs(etaj - kappaj).sum() for etaj, kappaj in zip(
+            eta.values(), kappa.values())]).sum()
+
+
+def correlation_objective_func(x, data_corr):
     """Objective function contribution of the correlation matrix
 
     Calculate the objective function for the correlation matrix of the
@@ -240,17 +303,17 @@ def correlation_objective_func(data_corr, x):
 
     Parameters
     ----------
-    data_corr : `float` or :class:`numpy.ndarray`[`float`] (Nx, Nx)
-        The correlation matrix (or scalar) of the full (not sampled)
-        continuous predictors
-    x : :class:`numpy.ndarray`[`float`] (Nx,) or (Nx, Npredictors)
+    x : :class:`numpy.ndarray`[``float``] (Nx,) or (Nx, Ncontinuous)
         The sampled continuous predictors
+    data_corr : ``float`` or :class:`numpy.ndarray`[``float``]
+        The correlation matrix (or scalar) of the full (not sampled)
+        continuous predictors. If 2D, must have shape (Ncontinuous, Ncontinuous)
 
     Returns
     -------
-    o_corr : `float`
+    o_corr : ``float``
         The contribution to the objective function from the correlation of the
-        predictors
+        continuous predictors
 
     Notes
     -----
@@ -274,7 +337,8 @@ def correlation_objective_func(data_corr, x):
     return np.sum(np.abs(data_corr - x_corr))
 
 
-def clhs_objective_func(x, quantiles, data_corr, weights=None):
+def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
+                        data_corr, weights=None):
     """Full objective function
 
     Get the value of the full objective function. Note that at this time,
@@ -283,31 +347,39 @@ def clhs_objective_func(x, quantiles, data_corr, weights=None):
 
     Parameters
     ----------
-    x : :class:`numpy.ndarray`[`float`] (Nx,) or (Nx, Npredictors)
+    x_continuous : array-like[``float``] (Nx,) or (Nx, Ncontinuous)
         The sampled continuous predictors
+    x_categorical : array-like (Nx,) or (Nx, Ncategorical)
+        The sampled categorical predictors, may be ``None`` if no categorical
+        predictors
     quantiles : :class:`numpy.ndarray` (Nx + 1,) or (Nx + 1, Npredictors)
         The quantiles which mark the edge of strata. The 0th axis must be
         one element longer than the 0th axis of ``x``
-    data_corr : `float` or :class:`numpy.ndarray`[`float`] (Nx, Nx)
+    kappa : dict[any, array-like[``float``]]
+        The proportions of each unique category in the full data with
+        Ncategorical key-value pairs. The keys can be anything to index the
+        categorical predictors, but the values are the normalized counts of the
+        unique values of each predictor. May be ``None`` if Ncategorical is 0
+    data_corr : ``float`` or :class:`numpy.ndarray`[``float``]
         The correlation matrix (or scalar) of the full (not sampled)
-        continuous predictors
-    weights : array-like[`float`] (3,), optional
+        continuous predictors, with shape (Ncontinuous, Ncontinuous) if 2D
+    weights : array-like[``float``] (3,), optional
         The weights for each of the objective function contributions, ordered
-        (1) continuous, (2) categorical, (3) correlation. If `None` (default),
+        (1) continuous, (2) categorical, (3) correlation. If ``None`` (default),
         applies a weight of 1 to all contributions, which is fine for general
         applications
 
     Returns
     -------
-    obj_tot : `float`
+    obj_tot : ``float``
         The total objective function for the cLHS
-    obj_continuous : :class:`numpy.ndarray`[`float`] (Nx,)
+    obj_continuous : :class:`numpy.ndarray`[``float``] (Nx,)
         The continuous variable objective function in strata,
         see :func:`~.continuous_objective_func`
-    obj_categorical : `float`
-        The categorical objective function, currently 0 as this is not yet
-        implemented
-    obj_corr : `float`
+    obj_categorical : ``float``
+        The categorical objective function, which is 0 if Ncategorical is 0, see
+        :func:`~.categorical_objective_func`
+    obj_corr : ``float``
         The correlation matrix objective function,
         see :func:`~.correlation_objective_func`
 
@@ -336,11 +408,14 @@ def clhs_objective_func(x, quantiles, data_corr, weights=None):
         weights_ = np.asarray(weights)
     else:
         weights_ = np.ones(3)
-    obj_continuous = continuous_objective_func(x, quantiles)
-    obj_categorical = 0
-    obj_corr = correlation_objective_func(data_corr, x)
+    obj_continuous = continuous_objective_func(x_continuous, quantiles)
+    if x_categorical is not None and np.size(x_categorical) > 0:
+        obj_categorical = categorical_objective_func(x_categorical, kappa)
+    else:
+        obj_categorical = 0
+    obj_corr = correlation_objective_func(x_continuous, data_corr)
     obj_all = np.array([
-        np.sum(obj_continuous), np.sum(obj_categorical), obj_corr])
+        np.sum(obj_continuous), obj_categorical, obj_corr])
     return np.sum(weights_ * obj_all), obj_continuous, obj_categorical, obj_corr
 
 
@@ -350,37 +425,36 @@ def resample_random(sampled_indices, remaining_indices, include=None):
 
     Parameters
     ----------
-    sampled_indices : :class:`numpy.ndarray`[`int`] (Nsamp,)
+    sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
         The indices of the previously selected sampling
-    remaining_indices : :class:`numpy.ndarray`[`int`] (Nrem,)
+    remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
         The indices which were not sampled (and which were not masked out),
         which should not have any indices from ``include`` (if given)
-    include : `int` or array-like[`int`]
+    include : ``int`` or array-like[``int``]
         Indices that must be in the sample, if any
 
     Returns
     -------
-    new_sampled_indices : :class:`numpy.ndarray`[`int`] (Nsamp,)
+    new_sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
         The indices of the new sampling
-    new_remaining_indices : :class:`numpy.ndarray`[`int`] (Nrem,)
+    new_remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
         The remaining indices not in the new sample (and not masked out). These
         won't contain anything from ``include`` (if given) as long as
         ``remaining_indices`` did not contain anything from ``include``
     """
     new_remaining_indices = remaining_indices.copy()
+    new_sampled_indices = sampled_indices.copy()
     if include is None:
-        include = []
-    always_include_ = np.unique(include)
-    allowed_to_remove_indices = sampled_indices[
-        np.isin(sampled_indices, always_include_, assume_unique=True,
-                invert=True)].copy()
-    idx_removed = np.random.choice(allowed_to_remove_indices.size)
+        include = np.array([], dtype=int)
+    include_ = np.unique(include)
+    idx_not_included = np.arange(new_sampled_indices.size)[
+        np.isin(new_sampled_indices, include_, assume_unique=True, invert=True)]
+    idx_removed = np.random.choice(idx_not_included)
     idx_added = np.random.choice(new_remaining_indices.size)
-    sampled_index_to_remove = allowed_to_remove_indices[idx_removed]
-    remained_index_to_sample = new_remaining_indices[idx_added]
-    allowed_to_remove_indices[idx_removed] = remained_index_to_sample
-    new_remaining_indices[idx_added] = sampled_index_to_remove
-    new_sampled_indices = np.append(allowed_to_remove_indices, always_include_)
+    index_to_remove = new_sampled_indices[idx_removed]
+    index_to_sample = new_remaining_indices[idx_added]
+    new_sampled_indices[idx_removed] = index_to_sample
+    new_remaining_indices[idx_added] = index_to_remove
     return new_sampled_indices, new_remaining_indices
 
 
@@ -397,44 +471,89 @@ def resample_worst(continuous_objective_values, sampled_indices,
     continuous_objective_values : array-like (Nsamp,)
         The continuous objective function in strata, as output by
         :func:`~.continuous_objective_func`
-    sampled_indices : :class:`numpy.ndarray`[`int`] (Nsamp,)
+    sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
         The indices of the previously selected sampling
-    remaining_indices : :class:`numpy.ndarray`[`int`] (Nrem,)
+    remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
         The indices which were not sampled (and which were not masked out),
         which should not have any indices from ``include`` (if given)
-    include : `int` or array-like[`int`]
+    include : ``int`` or array-like[``int``]
         Indices that must be in the sample, if any
 
     Returns
     -------
-    new_sampled_indices : :class:`numpy.ndarray`[`int`] (Nsamp,)
+    new_sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
         The indices of the new sampling
-    new_remaining_indices : :class:`numpy.ndarray`[`int`] (Nrem,)
+    new_remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
         The remaining indices not in the new sample (and not masked out). These
         won't contain anything from ``include`` (if given) as long as
         ``remaining_indices`` did not contain anything from ``include``
     """
     new_remaining_indices = remaining_indices.copy()
+    new_sampled_indices = sampled_indices.copy()
     if include is None:
-        include = []
-    always_include_ = np.unique(include)
-    allowed_to_remove_indices = sampled_indices[
-        np.isin(sampled_indices, always_include_, assume_unique=True,
-                invert=True)].copy()
+        include = np.array([], dtype=int)
+    include_ = np.unique(include)
+    idx_not_included = np.arange(new_sampled_indices.size)[
+        np.isin(new_sampled_indices, include_, assume_unique=True, invert=True)]
     unique_obj_vals, inverse_indices = np.unique(
-        continuous_objective_values[allowed_to_remove_indices],
-        return_inverse=True)
-    idx_worst = np.arange(allowed_to_remove_indices.size)[inverse_indices[
-        (inverse_indices == unique_obj_vals.size - 1)]]
-    if np.size(idx_worst) > 1:
+        continuous_objective_values[idx_not_included], return_inverse=True)
+    idx_worst = idx_not_included[
+        inverse_indices[(inverse_indices == unique_obj_vals.size - 1)]]
+    if idx_worst.size > 1:
         idx_worst = np.random.choice(idx_worst)
-    worst_sampled_index = allowed_to_remove_indices[idx_worst]
+    worst_sampled_index = new_sampled_indices[idx_not_included[idx_worst]]
     idx_added = np.random.choice(new_remaining_indices.size)
-    unsampled_index = new_remaining_indices[idx_added]
-    allowed_to_remove_indices[idx_worst] = unsampled_index
+    added_remaining_index = new_remaining_indices[idx_added]
+    new_sampled_indices[idx_worst] = added_remaining_index
     new_remaining_indices[idx_added] = worst_sampled_index
-    new_sampled_indices = np.append(allowed_to_remove_indices, always_include_)
     return new_sampled_indices, new_remaining_indices
+
+
+def resample(p, sampled_indices, remaining_indices, continuous_objective_values,
+             include=None):
+    """Helper function for resampling
+
+    This is a wrapper around the functions :func:`~.resample_random` and
+    :func:`~.resample_worst` that handles the decision process for which type
+    of resampling to do.
+
+    Parameters
+    ----------
+    p : ``float``
+        The probability of doing a random resample rather resampling from the
+        worst stratum when performing changes. Must be in the range (0, 1).
+    sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
+        The indices of the previously selected sampling
+    remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
+        The indices which were not sampled (and which were not masked out),
+        which should not have any indices from ``include`` (if given)
+    continuous_objective_values : array-like (Nsamp,)
+        The continuous objective function in strata, as output by
+        :func:`~.continuous_objective_func`. This will only be used if the
+        resampling is to be done in the worst stratum
+    include : ``int`` or array-like[``int``]
+        Indices that must be in the sample, if any
+
+    Returns
+    -------
+    new_sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
+        The indices of the new sampling
+    new_remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
+        The remaining indices not in the new sample (and not masked out). These
+        won't contain anything from ``include`` (if given) as long as
+        ``remaining_indices`` did not contain anything from ``include``
+    """
+    if not 0 < p < 1:
+        raise ValueError("p should be between 0 and 1 (exclusive)")
+    r = np.random.rand()  # decides which resample type
+    if r < p:
+        # Random
+        return resample_random(sampled_indices, remaining_indices, include)
+    else:
+        # Worst
+        return resample_worst(
+            continuous_objective_values, sampled_indices, remaining_indices,
+            include)
 
 
 def clhs(predictors, num_samples, good_mask=None, include=None,
@@ -452,69 +571,87 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     predictors : array-like (Nx,) or (Nx, Npredictors)
         The full set of predictors (independent data) with rows corresponding
         to observations and columns (if any) to individual predictors
-    num_samples : `int`
+    num_samples : ``int``
         The number of samples to draw. Must be less than the number of rows
         in ``predictors``
     good_mask : array-like[`bool`] (Nx,), optional
         A mask for selecting data, where `True` indicates good data and `False`
-        indicates data to be excluded. If `None` (default), all data is assumed
-        to be good
-    include : `int` or array-like[`int`], optional
+        indicates data to be excluded. If ``None`` (default), all data is
+        assumed to be good
+    include : ``int`` or array-like[``int``], optional
         Indices that must be included in the sample, if any
-    max_iterations : `int`, optional
+    max_iterations : ``int``, optional
         The maximum number of iterations, with a warning issued if
         convergence is not reached (based on the stopping criterion) within
         this number of iterations. Default 10,000
-    objective_func_limit : `float`, optional
+    objective_func_limit : ``float``, optional
         The stopping criterion, if any. The code stops if the total objective
-        function falls to or below this value. If `None` (default),
+        function falls to or below this value. If ``None`` (default),
         the sample is allowed to run until ``max_iterations``
-    initial_temp : `float`, optional
+    initial_temp : ``float``, optional
         The starting temperature for simulated annealing. This must be in the
         range (0, 1]. Default 1
-    temp_decrease : `float`, optional
+    temp_decrease : ``float``, optional
         The cooling factor, so that the temperature after cooling is this
         number times the temperature before cooling. Must be in the range (0,
         1). Default 0.95
-    cycle_length : `int`, optional
+    cycle_length : ``int``, optional
         The number of iterations between cooling steps for the simulated
         annealing. Default 10
-    p : `float`, optional
+    p : ``float``, optional
         The probability of doing a random resample rather resampling from the
         worst stratum when performing changes. Must be in the range (0, 1).
         Default 0.5
-    weights : array-like[`float`] (3,), optional
+    weights : array-like[``float``] (3,), optional
         The weights for the objective function components. See
-        :func:`~.clhs_objective_func`. If `None` (default), uses a weight of
+        :func:`~.clhs_objective_func`. If ``None`` (default), uses a weight of
         1 for all components
     progress : `bool`, optional
         If `True` (default), display a progress bar and other progress
         information
-    random_state : `int` or tuple, optional
+    random_state : ``int`` or tuple, optional
         A random state to initialize (or a seed for integer input). Not
         setting this may cause irreproducible results. See the documentation
         for :func:`numpy.random.set_state` for requirements on tuple input.
-        Default `None`
+        Default ``None``
 
     Returns
     -------
-    sampled_indices : :class:`numpy.ndarray`[`int`] (``num_samples``,)
-        The indices in the sample
-    remaining_indices : :class:`numpy.ndarray`[`int`]
-        The indices not in the sampling, which will never contain any indices
-        from ``include`` (if given). This will be 1D with length
-        ``num_data - num_samples`` if all indices are valid, or
-        ``num_data - num_samples - np.count_nonzero(~good_mask)``
-        if any indices are masked out
+    results : ``dict``
+        A dictionary containing the results after the stopping criterion or
+        after ``max_iterations`` steps. The contents of the dictionary are
+        described in :ref:`Notes` below
 
     Raises
     ------
     ValueError
         Raised if ``num_samples`` is longer than the number of rows in
         ``predictors``, if ``temp_decrease`` is not in (0, 1),
-        if ``initial_temp`` is not in (0, 1], or if ``p`` is not in (0, 1)
+        if ``initial_temp`` is not in (0, 1], if ``p`` is not in (0, 1), or if
+        ``include`` is not ``None`` and ``num_samples`` is not larger than the
+        length of ``include``
     UserWarning
         Raise if ``max_iterations`` reached without convergence
+
+    Notes
+    -----
+    The ``results`` dictionary keys are all strings. The values for each key
+    are, with types in parentheses:
+    - sample_indices: (:class:`numpy.ndarray`[``int``] of size ``num_samples``)
+                      The indices of the full data that are 'good' (if a mask
+                      was given) and are in the final LH sampling
+    - remaining_indices: (:class:`numpy.ndarray`[``int``] of size
+                         ``num_samples - numpy.count_nonzero(good_mask)``)
+                         The indices of the full data that are 'good' (if a mask
+                         was given) but are not in the LH sampling
+    - obj: (``float``) The final value of the full objective function
+    - obj_continuous: (:class:`numpy.ndarray`[``float``] of size
+                      ``num_samples``) The values of the continuous objective
+                      function for the final sample, as output from
+                      :func:`~.continuous_objective_func`
+    - x: (:class:`pandas.DataFrame`) The predictors at the final sampled indices
+    - r: (:class:`pandas.DataFrame`) The non-sampled predictors that are not
+         masked (if a mask was given)
     """
     if random_state is not None:
         if isinstance(random_state, int):
@@ -522,17 +659,35 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
             np.random.seed(random_state)
         else:
             np.random.set_state(random_state)
+    predictors_df = pd.DataFrame(data=np.squeeze(predictors))
+    n_rows = len(predictors_df.index)
     if good_mask is None:
-        good_mask = np.ones(np.squeeze(predictors).shape[0], dtype=bool)
-    if objective_func_limit is None:
-        objective_func_limit = -np.inf
-    n_rows = np.squeeze(predictors).shape[0]
-    n_obs = np.squeeze(predictors)[good_mask].shape[0]
+        good_mask = np.ones(n_rows, dtype=bool)
+    n_obs = len(predictors_df[good_mask].index)
     if num_samples >= n_obs:
         raise ValueError("Too many samples requested ({}) for predictors with"
                          " {} observations".format(num_samples, n_obs))
-    data_corr = get_correlation_matrix(predictors, good_mask)
-    quantiles = get_strata(predictors, num_samples, good_mask)
+    if include is not None and num_samples <= np.size(include):
+        raise ValueError("num_samples must be larger than the number of indices"
+                         " that must be included")
+
+    # Find categorical columns vs continuous columns
+    continuous_predictors = predictors_df.select_dtypes(include=float)
+    categorical_predictors = predictors_df.select_dtypes(exclude=float)
+    n_categorical = len(categorical_predictors.columns)
+    if n_categorical > 0:
+        ## Get the proportion of each category (for objective function)
+        categorical_proportions = dict(
+            (column, categorical_predictors[column][good_mask].value_counts(
+                normalize=True)) for column in categorical_predictors.columns)
+    else:
+        categorical_proportions = None
+
+    # Get continuous strata
+    data_corr = get_correlation_matrix(continuous_predictors, good_mask)
+    quantiles = get_strata(continuous_predictors, num_samples, good_mask)
+
+    # Set up annealing
     if not 0 < temp_decrease < 1:
         raise ValueError("temp_decrease should be between 0 and 1 (exclusive)")
     if not 0 < initial_temp <= 1:
@@ -541,15 +696,19 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     if not 0 < p < 1:
         raise ValueError("p should be between 0 and 1 (exclusive)")
     temp = initial_temp
+
+    # Get first sampling
     sample_indices, remaining_indices = get_random_samples(
         n_rows, num_samples, good_mask, include)
-    x = predictors[sample_indices].copy()
-    obj, obj_continuous, obj_categorical, obj_corr = clhs_objective_func(
-        x, quantiles, data_corr, weights)
+    x_continuous = continuous_predictors.iloc[sample_indices].copy()
+    x_categorical = categorical_predictors.iloc[sample_indices].copy()
+    obj, obj_continuous = clhs_objective_func(
+        x_continuous, x_categorical, quantiles, categorical_proportions,
+        data_corr, weights)[:2]
     current_results = dict(
         sample_indices=sample_indices.copy(),
         remaining_indices=remaining_indices.copy(),
-        x=x.copy(),
+        x = predictors_df.iloc[sample_indices].copy(),
         obj=obj,
         obj_continuous=obj_continuous.copy())
 
@@ -565,49 +724,46 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     for i in iterator:
         last_index_reached = i
         previous_results = copy.deepcopy(current_results)
-        if np.random.rand() < p:
-            # Random replacement
-            sample_indices, remaining_indices = resample_random(
-                previous_results["sample_indices"],
-                previous_results["remaining_indices"],
-                include)
-        else:
-            # Replace item from worst stratum
-            sample_indices, remaining_indices = resample_worst(
-                previous_results["obj_continuous"],
-                previous_results["sample_indices"],
-                previous_results["remaining_indices"],
-                include)
-        current_results["sample_indices"] = sample_indices.copy()
-        current_results["remaining_indices"] = remaining_indices.copy()
-        current_results["x"] = predictors[sample_indices].copy()
-        obj, obj_continuous, obj_categorical, obj_corr = clhs_objective_func(
-            current_results["x"], quantiles, data_corr, weights)
-        current_results["obj"] = obj
-        current_results["obj_continuous"] = obj_continuous
-        if obj <= objective_func_limit:
+        sample_indices, remaining_indices = resample(
+            p, previous_results["sample_indices"],
+            previous_results["remaining_indices"],
+            previous_results["obj_continuous"],
+            include)
+        x_continuous = continuous_predictors.iloc[sample_indices].copy()
+        x_categorical = categorical_predictors.iloc[sample_indices].copy()
+        obj, obj_continuous = clhs_objective_func(
+            x_continuous, x_categorical, quantiles, categorical_proportions,
+            data_corr, weights)[:2]
+        if objective_func_limit is not None and obj <= objective_func_limit:
             # Reached stopping criteria
             if progress:
                 iterator.close()
             break
         delta_obj = obj - previous_results["obj"]
         anneal_fac = np.exp(-delta_obj / temp)
-        if delta_obj > 0 and np.random.rand() >= anneal_fac:
-            # Don't take the step! revert current_results
-            current_results = copy.deepcopy(previous_results)
+        if delta_obj <= 0 or np.random.rand() < anneal_fac:
+            # Take the step! save current_results
+            current_results["sample_indices"] = sample_indices.copy()
+            current_results["remaining_indices"] = remaining_indices.copy()
+            current_results["x"] = predictors_df.iloc[sample_indices].copy()
+            current_results["obj"] = obj
+            current_results["obj_continuous"] = obj_continuous.copy()
         if i % cycle_length == 0:
             # "Cool" for the annealing
             temp *= temp_decrease
     # Either hit max_iterations, or reached objective_func_limit
     if progress:
         iterator.close()
-    # Print a warning if we hit max_iterations before stopping
-    if last_index_reached == max_iterations - 1:
+    # Print a warning if we hit max_iterations before stopping, but only if
+    # there is a stopping condition
+    if (objective_func_limit is not None
+          and last_index_reached == max_iterations - 1):
         warnings.warn("Did not reach stopping criterion {} within {}"
                       " iterations".format(objective_func_limit,
                                            max_iterations))
-    return (current_results["sample_indices"],
-            current_results["remaining_indices"])
+    current_results["r"] = predictors_df.iloc[
+        current_results["remaining_indices"]].copy()
+    return current_results
 
 
 if __name__ == "__main__":
@@ -704,16 +860,10 @@ if __name__ == "__main__":
                                                 " independent data)")
     args = parser.parse_args()
 
-    data = []
     n_cols = len(args.data_files)
-    for data_file in args.data_files:
-        data.append(healpy.read_map(data_file.as_posix, verbose=False))
-    data = np.asarray(data)
-    if n_cols == 1:
-        data = data.squeeze()
-    else:
-        if data.shape[1] != n_cols:
-            data = data.T
+    data = pd.DataFrame(columns=np.arange(n_cols))
+    for i, data_file in enumerate(args.data_files):
+        data[i] = healpy.read_map(data_file.as_posix, verbose=False)
 
     if args.mask_file is not None:
         if "fit" in args.mask_file.suffix.to_lower():
