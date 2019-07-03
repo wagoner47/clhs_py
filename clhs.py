@@ -16,8 +16,9 @@ import warnings
 
 __all__ = ["get_strata", "get_correlation_matrix", "get_random_samples",
            "counts_matrix", "continuous_objective_func",
-           "correlation_objective_func", "clhs_objective_func",
-           "resample_random", "resample_worst", "resample", "clhs"]
+           "categorical_objective_func", "correlation_objective_func",
+           "clhs_objective_func", "resample_random", "resample_worst",
+           "resample", "clhs"]
 __author__ = "Erika Wagoner"
 __copyright__ = "Copyright 2019, Erika Wagoner"
 __credits__ = ["Erika Wagoner"]
@@ -244,6 +245,8 @@ def continuous_objective_func(x, quantiles):
     Geosciences, vol. 32, pp. 1378-1388, 2006.
     """
     eta = counts_matrix(x, quantiles)
+    if eta.ndim == 1:
+        return np.abs(eta - 1)
     return np.sum(np.abs(eta - 1), axis=1)
 
 
