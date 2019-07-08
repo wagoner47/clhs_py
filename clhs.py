@@ -562,7 +562,7 @@ def resample(p, sampled_indices, remaining_indices, continuous_objective_values,
 def clhs(predictors, num_samples, good_mask=None, include=None,
          max_iterations=10000, objective_func_limit=None,
          initial_temp=1, temp_decrease=0.95, cycle_length=10, p=0.5,
-         weights=None, progress=True, random_state=None):
+         weights=None, progress=True, random_state=None, **progress_kwargs):
     """Generate conditioned Latin Hypercube sampling
 
     The full conditioned Latin Hypercube sampler. A progress bar may optionally
@@ -617,6 +617,9 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
         setting this may cause irreproducible results. See the documentation
         for :func:`numpy.random.set_state` for requirements on tuple input.
         Default ``None``
+    **progress_kwargs
+        Keyword arguments for the progress bar, only if ``progress`` is
+        ``True``. See documentation for :class:`tqdm.tqdm` for details.
 
     Returns
     -------
@@ -635,6 +638,10 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
         length of ``include``
     UserWarning
         Raise if ``max_iterations`` reached without convergence
+
+    See also
+    --------
+    tqdm.tqdm, tqdm.trange : Progress bar
 
     Notes
     -----
@@ -662,6 +669,15 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
             np.random.seed(random_state)
         else:
             np.random.set_state(random_state)
+    if progress:
+        # Add some keyword arguments for the progress bar if not included
+        progress_kwargs["desc"] = progress_kwargs.get("desc", "cLHS")
+        progress_kwargs["dynamic_ncols"] = progress_kwargs.get(
+            "dynamic_ncols", True)
+        progress_kwargs["bar_format"] = progress_kwargs.get(
+            "bar_format", "{desc}:{percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}"
+            " [Elapsed time: {elapsed_s}, ETA: {remaining_s}, {rate_fmt}"
+            "{postfix}]")
     predictors_df = pd.DataFrame(data=np.squeeze(predictors))
     n_rows = len(predictors_df.index)
     if good_mask is None:
@@ -722,7 +738,7 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
         else:
             return range(num)
 
-    iterator = range_func(progress, max_iterations, dynamic_ncols=True)
+    iterator = range_func(progress, max_iterations, **progress_kwargs)
     last_index_reached = 0
     for i in iterator:
         last_index_reached = i
