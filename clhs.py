@@ -192,14 +192,12 @@ def counts_matrix(x, quantiles):
     eta : :class:`numpy.ndarray`[``int``] (Nx,) or (Nx, Npredictors)
         The matrix of counts in strata, with the same shape as ``x``
     """
-    x_ = np.squeeze(x)
-    q_ = np.squeeze(quantiles)
-    if x_.ndim == 1:
-        eta = np.histogram(x_, bins=q_)[0].astype(int)
+    if np.ndim(q) == 1:
+        eta = np.histogram(np.squeeze(x), bins=q)[0].astype(int)
     else:
         eta = np.array([
             np.histogram(xj, bins=qj)[0].astype(int) for xj, qj in zip(
-                x_.T, q_.T)]).T
+                np.asarray(x).T, np.asarray(q).T)]).T
     return eta
 
 
