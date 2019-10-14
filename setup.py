@@ -3,7 +3,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import clhs
+#import clhs
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -20,9 +20,12 @@ with open("README.rst", "r") as fp:
 
 setup(
     name="clhs",
-    version=clhs.__version__,
-    author=clhs.__author__,
-    author_email=clhs.__email__,
+    #version=clhs.__version__,
+    #author=clhs.__author__,
+    #author_email=clhs.__email__,
+    version="1.0.1",
+    author="Erika Wagoner",
+    author_email="wagoner47+clhs@email.arizona.edu",
     url="https://github.com/wagoner47/clhs_py",
     py_modules=["clhs"],
     description="Conditioned Latin Hypercube Sampling in Python",

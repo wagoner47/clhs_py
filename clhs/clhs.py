@@ -21,7 +21,7 @@ __all__ = ["get_strata", "get_correlation_matrix", "get_random_samples",
            "resample", "clhs"]
 __author__ = "Erika Wagoner"
 __copyright__ = "Copyright 2019, Erika Wagoner"
-__credits__ = ["Erika Wagoner"]
+__credits__ = ["Erika Wagoner", "Zhonghua Zheng"]
 __license__ = "MIT"
 __version__ = "1.0.1"
 __maintainer__ = "Erika Wagoner"
