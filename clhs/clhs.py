@@ -781,4 +781,3 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     current_results["r"] = predictors_df.iloc[
         current_results["remaining_indices"]].copy()
     return current_results
-
