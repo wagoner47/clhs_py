@@ -29,5 +29,5 @@ setup(
     long_description=long_description,
     license="MIT",
     classifiers=classifiers,
-    install_requires=['healpy', 'astropy', 'tqdm', 'numpy', 'pandas']
+    install_requires=['tqdm', 'numpy', 'pandas']
     )
