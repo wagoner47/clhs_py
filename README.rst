@@ -1,5 +1,5 @@
 ==============================================================================
-cLHS
+cLHS: Conditioned Latin Hypercube Sampling
 ==============================================================================
 
 .. image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
