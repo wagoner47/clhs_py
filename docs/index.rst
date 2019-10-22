@@ -1,3 +1,8 @@
+ 
+cLHS: Conditioned Latin Hypercube Sampling
+==========================================
+
+
 Contents
 --------
 
@@ -5,6 +10,9 @@ Contents
    :maxdepth: 1
    :caption: Overview
 
-   why <readme_local>
-   installations
-   notebooks/quickstart
+   .. include:: ../README.rst  
+   .. include:: ./installation.rst
+   .. include:: ./notebooks/quickstart
+
+--------
+
