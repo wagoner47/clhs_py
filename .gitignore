@@ -1,4 +1,5 @@
 # -*- mode: gitignore; -*-
+*.DS_Store
 ## IDE: Emacs
 *~
 \#*\#
