@@ -1,22 +1,10 @@
-.. include:: ../README.rst
+Contents
+--------
 
-.. include:: INSTALL.rst
-
-API Reference
-=============
 .. toctree::
+   :maxdepth: 1
+   :caption: Overview
 
-   Overview <readme_local>
-   INSTALL
-   clhs
-   Licensing <license_local>
-
-Legal Stuff
-===========
-.. include:: ../LICENSE.rst
-
-Indices and tables
-==================
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   why <readme_local>
+   installations
+   notebooks/quickstart
