@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'cLHS'
+project = 'clhs'
 copyright = '2019, Erika Wagoner'
 author = 'Erika Wagoner'
 
