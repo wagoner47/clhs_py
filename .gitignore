@@ -197,6 +197,10 @@ docs/_build/
 docs/_static/
 docs/_templates/
 
+doc/_build/
+doc/_static/
+doc/_templates/
+
 # PyBuilder
 target/
 
