@@ -1,7 +1,4 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 #import clhs
 
@@ -32,5 +29,6 @@ setup(
     long_description=long_description,
     license="MIT",
     classifiers=classifiers,
-    install_requires=['tqdm', 'numpy', 'pandas']
+    install_requires=['tqdm', 'numpy', 'pandas'],
+    packages=find_packages()
     )
