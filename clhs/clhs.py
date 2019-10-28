@@ -689,8 +689,8 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
                          " that must be included")
 
     # Find categorical columns vs continuous columns
-    continuous_predictors = predictors_df.select_dtypes(include=float)
-    categorical_predictors = predictors_df.select_dtypes(exclude=float)
+    continuous_predictors = predictors_df.select_dtypes(include=["float32","float64",float])
+    categorical_predictors = predictors_df.select_dtypes(exclude=["float32","float64",float])
     n_categorical = len(categorical_predictors.columns)
     if n_categorical > 0:
         ## Get the proportion of each category (for objective function)
