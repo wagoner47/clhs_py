@@ -1,9 +1,6 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
-import clhs
+#import clhs
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -20,14 +17,18 @@ with open("README.rst", "r") as fp:
 
 setup(
     name="clhs",
-    version=clhs.__version__,
-    author=clhs.__author__,
-    author_email=clhs.__email__,
+    #version=clhs.__version__,
+    #author=clhs.__author__,
+    #author_email=clhs.__email__,
+    version="1.0.2",
+    author="Erika Wagoner",
+    author_email="wagoner47+clhs@email.arizona.edu",
     url="https://github.com/wagoner47/clhs_py",
     py_modules=["clhs"],
     description="Conditioned Latin Hypercube Sampling in Python",
     long_description=long_description,
     license="MIT",
     classifiers=classifiers,
-    install_requires=['tqdm', 'numpy', 'pandas']
+    install_requires=['tqdm', 'numpy', 'pandas'],
+    packages=find_packages()
     )

@@ -1,22 +1,27 @@
-.. include:: ../README.rst
+.. cLHS documentation master file, created by
+   sphinx-quickstart on Tue Oct 22 16:05:25 2019.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-.. include:: ../INSTALL.rst
+cLHS: Conditioned Latin Hypercube Sampling
+================================
 
-API Reference
-=============
 .. toctree::
+   :maxdepth: 2
+   :caption: Overview
 
-   Overview <readme_local>
-   install_local
-   clhs
-   Licensing <license_local>
+   about_clhs
+   installation
 
-Legal Stuff
-===========
-.. include:: ../LICENSE.rst
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+   
+   notebooks/quickstart
 
 Indices and tables
 ==================
+
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
