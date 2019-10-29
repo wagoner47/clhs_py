@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Conditioned Latin Hypercube Sampling
+r"""Conditioned Latin Hypercube Sampling
 
 This is a python implementation of the conditions LHS of Minasny & McBratney
 (2006; C&G 32 1378).
@@ -30,7 +30,7 @@ __status__ = "Development"
 
 
 def get_strata(predictors, num_samples, good_mask=None):
-    """Get sampling strata
+    r"""Get sampling strata
 
     Get the quantiles of ``predictors`` as the sampling strata. This assumes
     that ``num_samples`` is already less than the number of (possibly masked)
@@ -84,7 +84,7 @@ def get_strata(predictors, num_samples, good_mask=None):
 
 
 def get_correlation_matrix(predictors, good_mask=None):
-    """Get the correlation matrix of the predictors
+    r"""Get the correlation matrix of the predictors
 
     This can handle 1D or 2D predictors
 
@@ -111,7 +111,7 @@ def get_correlation_matrix(predictors, good_mask=None):
 
 
 def get_random_samples(num_data, num_samples, good_mask=None, include=None):
-    """Generate random sample of indices
+    r"""Generate random sample of indices
 
     Randomly choose indices as the initialization for the cLHS. The optional
     parameter ``include`` gives an index or indices which must be in the
@@ -170,7 +170,7 @@ def get_random_samples(num_data, num_samples, good_mask=None, include=None):
 
 
 def counts_matrix(x, quantiles):
-    """Count samples in strata
+    r"""Count samples in strata
 
     Get eta, the number of samples in ``x`` binned by ``quantiles`` in each
     variable, for continuous variables. The shape of eta is the same as the
@@ -202,7 +202,7 @@ def counts_matrix(x, quantiles):
 
 
 def continuous_objective_func(x, quantiles):
-    """Calculate the objective function for the counts in strata
+    r"""Calculate the objective function for the counts in strata
 
     This finds the objective function for continuous (not categorical)
     predictors in each of the stratum by summing the contribution of all
@@ -228,10 +228,12 @@ def continuous_objective_func(x, quantiles):
     -----
     The objective function for the continuous variables is defined in Minasny &
     McBratney (2006) [1]_ for :math:`n` samples and :math:`k` predictors as
+
     .. math::
 
         O_1 = \sum_i^n \sum_{j = 1}^k \left\lvert \eta\left(q_j^i \leq x_j <
-        q_j^{i+1}\right\rvert\: ,
+        q_j^{i+1}\right)\right\rvert\: ,
+
     where :math:`\eta\left(q_j^i \leq x_j < q_j^{i+1}\right)` is the number of
     samples :math:`x_j` of a given predictor that fall within the quantile bin
     :math:`q_j^i` and :math:`q_j^{i+1}`.
@@ -239,8 +241,8 @@ def continuous_objective_func(x, quantiles):
     References
     ----------
     .. [1] B. Minasny, A. B. McBratney, "A conditioned Latin hypercube method
-    for sampling in the presence of ancillary information", Computers &
-    Geosciences, vol. 32, pp. 1378-1388, 2006.
+       for sampling in the presence of ancillary information", Computers &
+       Geosciences, vol. 32, pp. 1378-1388, 2006.
     """
     eta = counts_matrix(x, quantiles)
     if eta.ndim == 1:
@@ -249,7 +251,7 @@ def continuous_objective_func(x, quantiles):
 
 
 def categorical_objective_func(x, kappa):
-    """Calculate the objective function for categorical predictors
+    r"""Calculate the objective function for categorical predictors
 
     Parameters
     ----------
@@ -272,20 +274,22 @@ def categorical_objective_func(x, kappa):
     -----
     The objective function for the categorical variables is defined in Minasny &
     McBratney (2006) [1]_ for :math:`n` samples and :math:`c` classes as
+
     .. math::
 
         O_2 = \sum_{j = 1}^c \left\lvert \frac{\eta\left(x_j\right)}{n}
               - \kappa_j \right\rvert\: ,
-    where :math:`\eta\left(x_j)` is the number of samples :math:`x` in class
-    :math:`j` and :math:`\kappa_j` is the proportion of class :math:`j` in the
-    full (unsampled) data. Here, 'class' is used in a 1D sense. With multiple
-    categorical predictors, I'm adding a sum over predictors.
+
+    where :math:`\eta\left(x_j\right)` is the number of samples :math:`x` in
+    class :math:`j` and :math:`\kappa_j` is the proportion of class :math:`j` in
+    the full (unsampled) data. Here, 'class' is used in a 1D sense. With
+    multiple categorical predictors, I'm adding a sum over predictors.
 
     References
     ----------
     .. [1] B. Minasny, A. B. McBratney, "A conditioned Latin hypercube method
-    for sampling in the presence of ancillary information", Computers &
-    Geosciences, vol. 32, pp. 1378-1388, 2006.
+       for sampling in the presence of ancillary information", Computers &
+       Geosciences, vol. 32, pp. 1378-1388, 2006.
     """
     x_df = pd.DataFrame(data=np.squeeze(x))
     eta = dict(
@@ -297,7 +301,7 @@ def categorical_objective_func(x, kappa):
 
 
 def correlation_objective_func(x, data_corr):
-    """Objective function contribution of the correlation matrix
+    r"""Objective function contribution of the correlation matrix
 
     Calculate the objective function for the correlation matrix of the
     continuous variables
@@ -320,10 +324,12 @@ def correlation_objective_func(x, data_corr):
     -----
     The objective function for the correlation matrix is defined in Minasny &
     McBratney (2006) [1]_ for :math:`k` predictors as
+
     .. math::
 
         O_3 = \sum_{i = 1}^k \sum_{j = 1}^k \left\lvert C_{ij} - T_{ij}
         \right\rvert\: ,
+
     where :math:`C_{ij}` is the element in the :math:`i`'th row and :math:`j`'th
     column of the correlation matrix of the full predictors, and :math:`T_{ij}`
     is the same for the correlation matrix of the sampled predictors.
@@ -331,8 +337,8 @@ def correlation_objective_func(x, data_corr):
     References
     ----------
     .. [1] B. Minasny, A. B. McBratney, "A conditioned Latin hypercube method
-    for sampling in the presence of ancillary information", Computers &
-    Geosciences, vol. 32, pp. 1378-1388, 2006.
+       for sampling in the presence of ancillary information", Computers &
+       Geosciences, vol. 32, pp. 1378-1388, 2006.
     """
     x_corr = get_correlation_matrix(x)
     return np.sum(np.abs(data_corr - x_corr))
@@ -340,7 +346,7 @@ def correlation_objective_func(x, data_corr):
 
 def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
                         data_corr, weights=None):
-    """Full objective function
+    r"""Full objective function
 
     Get the value of the full objective function. Note that at this time,
     including categorical data has not yet been implemented, but should be
@@ -391,9 +397,11 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
 
     The total objective function is defined in Minasny &
     McBratney (2006) [1]_ as
+
     .. math::
 
         O = w_1 O_1 + w_2 O_2 + w_3 O_3\: ,
+
     where :math:`O_1` is the objective function for continuous predictors,
     :math:`O_2` is the objective function for categorical predictors,
     :math:`O_3` is the objective function for the correlation matrix, and the
@@ -402,8 +410,8 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
     References
     ----------
     .. [1] B. Minasny, A. B. McBratney, "A conditioned Latin hypercube method
-    for sampling in the presence of ancillary information", Computers &
-    Geosciences, vol. 32, pp. 1378-1388, 2006.
+       for sampling in the presence of ancillary information", Computers &
+       Geosciences, vol. 32, pp. 1378-1388, 2006.
     """
     if weights is not None:
         weights_ = np.asarray(weights)
@@ -421,7 +429,7 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
 
 
 def resample_random(sampled_indices, remaining_indices, include=None):
-    """Do random replacement of one item in the sample, but don't remove any
+    r"""Do random replacement of one item in the sample, but don't remove any
     indices in ``include``
 
     Parameters
@@ -461,7 +469,7 @@ def resample_random(sampled_indices, remaining_indices, include=None):
 
 def resample_worst(continuous_objective_values, sampled_indices,
                    remaining_indices, include=None):
-    """Resample in the worst stratum
+    r"""Resample in the worst stratum
 
     Remove a sampled item from the worst stratum (or one of the worst strata)
     and replace it with a random item from the unsampled items. But don't
@@ -512,7 +520,7 @@ def resample_worst(continuous_objective_values, sampled_indices,
 
 def resample(p, sampled_indices, remaining_indices, continuous_objective_values,
              include=None):
-    """Helper function for resampling
+    r"""Helper function for resampling
 
     This is a wrapper around the functions :func:`~.resample_random` and
     :func:`~.resample_worst` that handles the decision process for which type
@@ -561,7 +569,7 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
          max_iterations=10000, objective_func_limit=None,
          initial_temp=1, temp_decrease=0.95, cycle_length=10, p=0.5,
          weights=None, progress=True, random_state=None, **progress_kwargs):
-    """Generate conditioned Latin Hypercube sampling
+    r"""Generate conditioned Latin Hypercube sampling
 
     The full conditioned Latin Hypercube sampler. A progress bar may optionally
     be displayed, but may not be informative for large maximum number of
@@ -624,7 +632,7 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     results : ``dict``
         A dictionary containing the results after the stopping criterion or
         after ``max_iterations`` steps. The contents of the dictionary are
-        described in :ref:`Notes` below
+        described in *Notes* below
 
     Raises
     ------
@@ -645,21 +653,30 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     -----
     The ``results`` dictionary keys are all strings. The values for each key
     are, with types in parentheses:
-    - sample_indices: (:class:`numpy.ndarray`[``int``] of size ``num_samples``)
-                      The indices of the full data that are 'good' (if a mask
-                      was given) and are in the final LH sampling
-    - remaining_indices: (:class:`numpy.ndarray`[``int``] of size
-                         ``num_samples - numpy.count_nonzero(good_mask)``)
-                         The indices of the full data that are 'good' (if a mask
-                         was given) but are not in the LH sampling
-    - obj: (``float``) The final value of the full objective function
-    - obj_continuous: (:class:`numpy.ndarray`[``float``] of size
-                      ``num_samples``) The values of the continuous objective
-                      function for the final sample, as output from
-                      :func:`~.continuous_objective_func`
-    - x: (:class:`pandas.DataFrame`) The predictors at the final sampled indices
-    - r: (:class:`pandas.DataFrame`) The non-sampled predictors that are not
-         masked (if a mask was given)
+    
+    - sample_indices (:class:`numpy.ndarray`[``int``] of size ``num_samples``):
+
+      The indices of the full data that are 'good' (if a mask was given) and
+      are in the final LH sampling
+    - remaining_indices (:class:`numpy.ndarray`[``int``] of size
+      ``num_samples - numpy.count_nonzero(good_mask)``):
+
+      The indices of the full data that are 'good' (if a mask was given) but are
+      not in the LH sampling
+    - obj (``float``):
+
+      The final value of the full objective function
+    - obj_continuous (:class:`numpy.ndarray`[``float``] of size ``num_samples``
+      ):
+
+      The values of the continuous objective function for the final sample, as
+      output from :func:`~.continuous_objective_func`
+    - x (:class:`pandas.DataFrame`):
+
+      The predictors at the final sampled indices
+    - r (:class:`pandas.DataFrame`):
+
+      The non-sampled predictors that are not masked (if a mask was given)
     """
     if random_state is not None:
         if isinstance(random_state, int):
@@ -689,8 +706,10 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
                          " that must be included")
 
     # Find categorical columns vs continuous columns
-    continuous_predictors = predictors_df.select_dtypes(include=["float32","float64",float])
-    categorical_predictors = predictors_df.select_dtypes(exclude=["float32","float64",float])
+    continuous_predictors = predictors_df.select_dtypes(
+        include=["float32","float64",float])
+    categorical_predictors = predictors_df.select_dtypes(
+        exclude=["float32","float64",float])
     n_categorical = len(categorical_predictors.columns)
     if n_categorical > 0:
         ## Get the proportion of each category (for objective function)
