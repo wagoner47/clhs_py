@@ -14,16 +14,16 @@ cLHS: Conditioned Latin Hypercube Sampling
    installation
 
 .. toctree::
-   :maxdepth: 1
-   :caption: API Reference
-
-   clhs
-
-.. toctree::
    :maxdepth: 2
    :caption: Tutorials
 
    notebooks/quickstart
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
+
+   clhs
 
 Indices and tables
 ==================
