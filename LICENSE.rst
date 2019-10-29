@@ -1,5 +1,7 @@
 MIT License
 
+.. include_after_mark
+
 Copyright (c) 2019 Erika Wagoner
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
