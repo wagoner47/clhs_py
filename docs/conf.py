@@ -41,7 +41,7 @@ master_doc = 'index'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-	'nbsphinx',
+    'nbsphinx',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax'
 ]
