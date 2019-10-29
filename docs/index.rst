@@ -10,8 +10,9 @@ cLHS: Conditioned Latin Hypercube Sampling
    :maxdepth: 2
    :caption: Overview
 
-   about_clhs
+   Aboud cLHS <about_clhs>
    installation
+   license
 
 .. toctree::
    :maxdepth: 2
