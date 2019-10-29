@@ -44,7 +44,9 @@ extensions = [
     'nbsphinx',
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
+    'numpydoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -83,6 +85,9 @@ html_theme_options = {
 html_static_path = ['_static']
 
 # -- Autodoc options ---------------------------------------------------------
-autodoc_default_flags = ['show-inheritance']
-autodoc_member_order = 'bysource'
-autosummary_generate = False
+autodoc_default_options = {
+    'show-inheritance': True
+}
+
+# -- Napoleon options --------------------------------------------------------
+#napoleon_use_admonition_for_references = False

@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 cLHS: Conditioned Latin Hypercube Sampling
-================================
+==========================================
 
 .. toctree::
    :maxdepth: 2
@@ -14,9 +14,15 @@ cLHS: Conditioned Latin Hypercube Sampling
    installation
 
 .. toctree::
+   :maxdepth: 1
+   :caption: API Reference
+
+   clhs
+
+.. toctree::
    :maxdepth: 2
    :caption: Tutorials
-   
+
    notebooks/quickstart
 
 Indices and tables
