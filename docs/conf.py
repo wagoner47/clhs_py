@@ -85,4 +85,4 @@ html_static_path = ['_static']
 # -- Autodoc options ---------------------------------------------------------
 autodoc_default_flags = ['show-inheritance']
 autodoc_member_order = 'bysource'
-autosummary_generate = True
+autosummary_generate = False
