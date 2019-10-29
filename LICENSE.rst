@@ -2,7 +2,8 @@ MIT License
 
 .. include_after_mark
 
-Copyright (c) 2019 Erika Wagoner
+Copyright (c) 2019 Erika Wagoner and
+`contributors <https://github.com/wagoner47/clhs_py/graphs/contributors>`_.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
