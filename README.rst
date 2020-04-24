@@ -1,14 +1,15 @@
 ==============================================================================
 cLHS: Conditioned Latin Hypercube Sampling
 ==============================================================================
+|docs|  |GitHub|
 
-.. image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
+.. |docs| image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
    :target: https://clhs-py.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
 .. include-marker-do-not-remove
 
-.. image:: https://img.shields.io/badge/GitHub-clhs__py-informational.svg
+.. |GitHub| image:: https://img.shields.io/badge/GitHub-clhs__py-informational.svg
    :target: https://github.com/wagoner47/clhs_py
 
 .. image:: https://img.shields.io/github/license/wagoner47/clhs_py.svg
