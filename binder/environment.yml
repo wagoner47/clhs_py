@@ -4,6 +4,7 @@ dependencies:
   - python=3.7
   - pip
   - matplotlib
+  - netcdf4
   - tqdm
   - xarray
   - pip:
