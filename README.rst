@@ -1,7 +1,7 @@
 ==============================================================================
 cLHS: Conditioned Latin Hypercube Sampling
 ==============================================================================
-|docs| |GitHub| |binder| |license|
+|docs| |GitHub| |binder| |license| |pepy|
 
 .. |docs| image:: https://readthedocs.org/projects/clhs-py/badge/?version=latest
    :target: https://clhs-py.readthedocs.io/en/latest/?badge=latest
@@ -15,6 +15,9 @@ cLHS: Conditioned Latin Hypercube Sampling
 
 .. |license| image:: https://img.shields.io/badge/License-MIT-blue.svg
    :target: https://github.com/wagoner47/clhs_py/blob/master/LICENSE.rst
+   
+.. |pepy| image:: https://static.pepy.tech/personalized-badge/clhs?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
+   :target: https://pepy.tech/project/clhs
 
 This **Python** package is based on the **Conditioned Latin Hypercube Sampling (cLHS)**
 method of `Minasny & McBratney (2006)`_. It follows some of the code from the **R** package
