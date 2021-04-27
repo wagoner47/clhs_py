@@ -10,7 +10,7 @@ cLHS: Conditioned Latin Hypercube Sampling
    :maxdepth: 2
    :caption: Overview
 
-   Aboud cLHS <about_clhs>
+   About cLHS <about_clhs>
    installation
    license
 
