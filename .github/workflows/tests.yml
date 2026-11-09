@@ -1,0 +1,28 @@
+name: Sampling tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.9"
+            dependencies: "numpy==1.26.0 pandas==2.0.0 tqdm==4.66.0"
+          - python: "3.12"
+            dependencies: "numpy==2.5.4 pandas==3.0.6 tqdm==4.70.1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the test dependencies
+        env:
+          DEPENDENCIES: ${{ matrix.dependencies }}
+        run: python -m pip install -e . pytest $DEPENDENCIES
+      - run: python -m pytest tests/test_sampling.py -q -W error
