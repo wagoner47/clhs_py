@@ -296,7 +296,8 @@ def categorical_objective_func(x, kappa):
         (column, x_df[column].value_counts(normalize=True)) for column in
         x_df.columns)
     return np.array([
-        np.abs(etaj - kappaj).sum() for etaj, kappaj in zip(
+        etaj.subtract(pd.Series(kappaj), fill_value=0).abs().sum()
+        for etaj, kappaj in zip(
             eta.values(), kappa.values())]).sum()
 
 
@@ -348,9 +349,7 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
                         data_corr, weights=None):
     r"""Full objective function
 
-    Get the value of the full objective function. Note that at this time,
-    including categorical data has not yet been implemented, but should be
-    included in the future (for, e.g., star-galaxy separation).
+    Combine the continuous, categorical, and correlation objectives.
 
     Parameters
     ----------
@@ -393,7 +392,7 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
     Notes
     -----
     The weight for the categorical objective function must be given if
-    ``weights`` is given, even though this is not yet implemented.
+    ``weights`` is given, even when there are no categorical predictors.
 
     The total objective function is defined in Minasny &
     McBratney (2006) [1]_ as
@@ -428,6 +427,41 @@ def clhs_objective_func(x_continuous, x_categorical, quantiles, kappa,
     return np.sum(weights_ * obj_all), obj_continuous, obj_categorical, obj_corr
 
 
+def _continuous_sample_scores(x, quantiles):
+    """Score observations by excess counts in their occupied continuous bins.
+
+    This maps bin counts back to observations, separately for each predictor.
+    The stratum objectives remain unchanged. Bin boundaries follow
+    numpy.histogram, including repeated edges and the closed final bin.
+    See https://github.com/cran/clhs/blob/master/R/clhs-internal.R for the
+    observation scoring used by the R reference implementation.
+    """
+    values = np.asarray(x)
+    if values.ndim == 1:
+        values = values[:, None]
+    edges = np.asarray(quantiles)
+    if edges.ndim == 1:
+        edges = edges[:, None]
+    scores = np.zeros(values.shape[0], dtype=int)
+    for column, bins in zip(values.T, edges.T):
+        counts = np.histogram(column, bins=bins)[0]
+        positions = np.searchsorted(bins, column, side="right") - 1
+        positions[column == bins[-1]] = counts.size - 1
+        scores += counts[positions] - 1
+    return scores
+
+
+def _eligible_positions(sampled_indices, remaining_indices, include):
+    """Return removable positions, or explain why a swap is impossible."""
+    if remaining_indices.size == 0:
+        raise ValueError("remaining_indices must not be empty")
+    eligible = np.flatnonzero(
+        ~np.isin(sampled_indices, [] if include is None else include))
+    if eligible.size == 0:
+        raise ValueError("No sampled indices are eligible for replacement")
+    return eligible
+
+
 def resample_random(sampled_indices, remaining_indices, include=None):
     r"""Do random replacement of one item in the sample, but don't remove any
     indices in ``include``
@@ -450,14 +484,16 @@ def resample_random(sampled_indices, remaining_indices, include=None):
         The remaining indices not in the new sample (and not masked out). These
         won't contain anything from ``include`` (if given) as long as
         ``remaining_indices`` did not contain anything from ``include``
+
+    Raises
+    ------
+    ValueError
+        If the remaining array is empty or no sampled index can be removed.
     """
+    idx_not_included = _eligible_positions(
+        sampled_indices, remaining_indices, include)
     new_remaining_indices = remaining_indices.copy()
     new_sampled_indices = sampled_indices.copy()
-    if include is None:
-        include = np.array([], dtype=int)
-    include_ = np.unique(include)
-    idx_not_included = np.arange(new_sampled_indices.size)[
-        np.isin(new_sampled_indices, include_, assume_unique=True, invert=True)]
     idx_removed = np.random.choice(idx_not_included)
     idx_added = np.random.choice(new_remaining_indices.size)
     index_to_remove = new_sampled_indices[idx_removed]
@@ -469,17 +505,18 @@ def resample_random(sampled_indices, remaining_indices, include=None):
 
 def resample_worst(continuous_objective_values, sampled_indices,
                    remaining_indices, include=None):
-    r"""Resample in the worst stratum
+    r"""Replace an observation with the largest continuous sample score
 
-    Remove a sampled item from the worst stratum (or one of the worst strata)
-    and replace it with a random item from the unsampled items. But don't
-    replace anything in ``include``
+    Choose uniformly among removable observations with the largest score and
+    replace one with a random unsampled item. Preserve indices in ``include``.
 
     Parameters
     ----------
     continuous_objective_values : array-like (Nsamp,)
-        The continuous objective function in strata, as output by
-        :func:`~.continuous_objective_func`
+        Finite scores aligned with positions in ``sampled_indices``. For each
+        observation, sum the count minus one in its occupied bin across
+        continuous predictors. These are observation scores, not the stratum
+        objectives returned by :func:`~.continuous_objective_func`.
     sampled_indices : :class:`numpy.ndarray`[``int``] (Nsamp,)
         The indices of the previously selected sampling
     remaining_indices : :class:`numpy.ndarray`[``int``] (Nrem,)
@@ -496,21 +533,27 @@ def resample_worst(continuous_objective_values, sampled_indices,
         The remaining indices not in the new sample (and not masked out). These
         won't contain anything from ``include`` (if given) as long as
         ``remaining_indices`` did not contain anything from ``include``
+
+    Raises
+    ------
+    ValueError
+        If the remaining array is empty, no sampled index can be removed, or
+        the scores are not a finite 1D array matching ``sampled_indices``.
     """
+    idx_not_included = _eligible_positions(
+        sampled_indices, remaining_indices, include)
+    scores = np.asarray(continuous_objective_values, dtype=float)
+    if scores.ndim != 1 or scores.shape != sampled_indices.shape:
+        raise ValueError("continuous_objective_values must be a 1D array"
+                         " matching sampled_indices")
+    if not np.isfinite(scores).all():
+        raise ValueError("continuous_objective_values must contain finite scores")
     new_remaining_indices = remaining_indices.copy()
     new_sampled_indices = sampled_indices.copy()
-    if include is None:
-        include = np.array([], dtype=int)
-    include_ = np.unique(include)
-    idx_not_included = np.arange(new_sampled_indices.size)[
-        np.isin(new_sampled_indices, include_, assume_unique=True, invert=True)]
-    unique_obj_vals, inverse_indices = np.unique(
-        continuous_objective_values[idx_not_included], return_inverse=True)
-    idx_worst = idx_not_included[
-        inverse_indices[(inverse_indices == unique_obj_vals.size - 1)]]
-    if idx_worst.size > 1:
-        idx_worst = np.random.choice(idx_worst)
-    worst_sampled_index = new_sampled_indices[idx_not_included[idx_worst]]
+    eligible_scores = scores[idx_not_included]
+    idx_worst = int(np.random.choice(
+        idx_not_included[eligible_scores == eligible_scores.max()]))
+    worst_sampled_index = new_sampled_indices[idx_worst]
     idx_added = np.random.choice(new_remaining_indices.size)
     added_remaining_index = new_remaining_indices[idx_added]
     new_sampled_indices[idx_worst] = added_remaining_index
@@ -537,9 +580,9 @@ def resample(p, sampled_indices, remaining_indices, continuous_objective_values,
         The indices which were not sampled (and which were not masked out),
         which should not have any indices from ``include`` (if given)
     continuous_objective_values : array-like (Nsamp,)
-        The continuous objective function in strata, as output by
-        :func:`~.continuous_objective_func`. This will only be used if the
-        resampling is to be done in the worst stratum
+        Finite observation scores aligned with ``sampled_indices``, as
+        described in :func:`~.resample_worst`. Used only for worst-observation
+        resampling, not random resampling.
     include : ``int`` or array-like[``int``]
         Indices that must be in the sample, if any
 
@@ -579,7 +622,12 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     ----------
     predictors : array-like (Nx,) or (Nx, Npredictors)
         The full set of predictors (independent data) with rows corresponding
-        to observations and columns (if any) to individual predictors
+        to observations and columns (if any) to individual predictors.
+        Floating columns are continuous; integer and other columns are
+        categorical. Convert integer measurements to float for continuous
+        treatment. With only categorical predictors, swaps choose removable
+        observations uniformly and use the categorical objective to accept
+        or reject proposals.
     num_samples : ``int``
         The number of samples to draw. Must be less than the number of rows
         in ``predictors``
@@ -760,10 +808,13 @@ def clhs(predictors, num_samples, good_mask=None, include=None,
     for i in iterator:
         last_index_reached = i
         previous_results = copy.deepcopy(current_results)
+        sample_scores = _continuous_sample_scores(
+            continuous_predictors.iloc[previous_results["sample_indices"]],
+            quantiles)
         sample_indices, remaining_indices = resample(
             p, previous_results["sample_indices"],
             previous_results["remaining_indices"],
-            previous_results["obj_continuous"],
+            sample_scores,
             include)
         x_continuous = continuous_predictors.iloc[sample_indices].copy()
         x_categorical = categorical_predictors.iloc[sample_indices].copy()
