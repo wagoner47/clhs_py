@@ -14,6 +14,8 @@ import pandas as pd
 import copy
 import warnings
 
+from ._version import __version__
+
 __all__ = ["get_strata", "get_correlation_matrix", "get_random_samples",
            "counts_matrix", "continuous_objective_func",
            "categorical_objective_func", "correlation_objective_func",
@@ -23,7 +25,6 @@ __author__ = "Erika Wagoner"
 __copyright__ = "Copyright 2019, Erika Wagoner"
 __credits__ = ["Erika Wagoner", "Zhonghua Zheng"]
 __license__ = "MIT"
-__version__ = "1.0.1"
 __maintainer__ = "Erika Wagoner"
 __email__ = "wagoner47+clhs@email.arizona.edu"
 __status__ = "Development"
@@ -581,8 +582,8 @@ def resample(p, sampled_indices, remaining_indices, continuous_objective_values,
         which should not have any indices from ``include`` (if given)
     continuous_objective_values : array-like (Nsamp,)
         Finite observation scores aligned with ``sampled_indices``, as
-        described in :func:`~.resample_worst`. Used only for worst-observation
-        resampling, not random resampling.
+        described in :func:`~.resample_worst`. Used only when resampling the
+        worst observation.
     include : ``int`` or array-like[``int``]
         Indices that must be in the sample, if any
 

@@ -1,0 +1,57 @@
+name: Tests and distributions
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
+        dependencies: [""]
+        include:
+          - python: "3.9"
+            dependencies: "numpy==1.26.0 pandas==2.0.0 tqdm==4.66.0"
+          - python: "3.12"
+            dependencies: "numpy==2.5.4 pandas==3.0.6 tqdm==4.70.1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install build pytest
+      - run: python -m build
+      - name: Install the wheel with the selected dependencies
+        env:
+          DEPENDENCIES: ${{ matrix.dependencies }}
+        run: python -m pip install dist/*.whl $DEPENDENCIES
+      - name: Test outside the checkout
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -c 'import clhs; assert "site-packages" in clhs.__file__, clhs.__file__'
+          python -m pytest "$GITHUB_WORKSPACE/tests" -c "$GITHUB_WORKSPACE/pyproject.toml" -q
+
+  distributions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check --strict dist/*
+      - name: Test both installed distributions
+        working-directory: ${{ runner.temp }}
+        run: |
+          for artifact in "$GITHUB_WORKSPACE"/dist/*.whl "$GITHUB_WORKSPACE"/dist/*.tar.gz; do
+            environment="$RUNNER_TEMP/$(basename "$artifact").venv"
+            python -m venv "$environment"
+            "$environment/bin/python" -m pip install "$artifact" pytest
+            "$environment/bin/python" -c 'import clhs; assert "site-packages" in clhs.__file__, clhs.__file__'
+            "$environment/bin/python" -m pytest "$GITHUB_WORKSPACE/tests" -c "$GITHUB_WORKSPACE/pyproject.toml" -q
+          done

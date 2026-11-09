@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clhs"
+dynamic = ["version"]
+description = "Conditioned Latin Hypercube Sampling in Python"
+readme = "README.rst"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE.rst"]
+authors = [{name = "Erika Wagoner", email = "wagoner47+clhs@email.arizona.edu"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = ["numpy>=1.26.0", "pandas>=2.0.0", "tqdm>=4.66.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3"]
+
+[project.urls]
+Homepage = "https://github.com/wagoner47/clhs_py"
+Documentation = "https://clhs-py.readthedocs.io/en/latest/"
+
+[tool.setuptools.dynamic]
+version = {attr = "clhs._version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["clhs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+addopts = "--import-mode=importlib"
