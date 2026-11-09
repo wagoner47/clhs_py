@@ -31,38 +31,6 @@ You may reproduce the jupyter notebook example on `Binder <https://mybinder.org/
 
 Please check `online documentation <https://clhs-py.readthedocs.io/en/latest/>`_ for more information.
 
-Installation and development
------------------------------
-
-Python 3.9 or later is required. Install with ``python -m pip install clhs``.
-For development with uv:
-
-.. code-block:: bash
-
-    uv venv --python 3.12
-    uv pip install -e ".[test]"
-    uv run --no-project python -m pytest
-
-You can also use pip and venv. See ``docs/installation.rst`` for source
-installation and build instructions.
-
-Predictor types and resampling
--------------------------------
-
-Floating columns are continuous. Integer and other columns are categorical.
-Convert integer measurements to float to treat them as continuous predictors.
-Inputs containing only categorical predictors use random swaps with the
-categorical objective.
-
-The resampling helpers keep their signatures, but their
-``continuous_objective_values`` argument must contain scores aligned with
-``sampled_indices``. For each observation, sum the count minus one in its
-occupied bin across continuous predictors. The stratum objectives returned by
-``continuous_objective_func`` and ``clhs`` are separate quantities and cannot
-be passed directly as observation scores. ``clhs`` computes these scores
-internally. Corrected scoring can change selected indices compared with older
-versions. Calls with the same seed remain reproducible within an environment.
-
 
 .. _Minasny & McBratney (2006): https://doi.org/10.1016/j.cageo.2005.12.009
 .. _clhs: https://CRAN.R-project.org/package=clhs

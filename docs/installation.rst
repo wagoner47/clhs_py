@@ -1,60 +1,56 @@
 Installation instructions
 ===============================================================================
 
-cLHS supports Python 3.9 and later. Its runtime requirements are NumPy 1.26.0
-or later, pandas 2.0.0 or later, and tqdm 4.66.0 or later. The installer chooses
-dependency versions compatible with your Python version.
 
-Install from PyPI
------------------
+Install on local machine with ``pip``
+-------------------------------------
 
 .. code-block:: bash
 
-    python -m pip install clhs
+    $ pip install clhs
 
-Install from source
--------------------
 
-.. code-block:: bash
+Install on local machine from source
+------------------------------------
 
-    git clone https://github.com/wagoner47/clhs_py.git
-    cd clhs_py
-    python -m pip install .
+The get the latest verson that is not uploaded to PyPI yet:
 
-The project declares setuptools as its build backend in ``pyproject.toml``.
-pip creates an isolated build environment and installs the build requirements.
+#. Clone the github repository
 
-Development with uv
--------------------
+   .. code-block:: bash
 
-uv is optional. To create a local environment and install the tests:
+      $ git clone https://github.com/wagoner47/clhs_py.git
 
-.. code-block:: bash
 
-    uv venv --python 3.12
-    uv pip install -e ".[test]"
-    uv run --no-project python -m pytest
+   Or using SSH clone
 
-The ``.venv`` directory is ignored by Git. The library does not require a uv
-lockfile.
+   .. code-block:: bash
 
-Development with pip
----------------------
+      $ git clone git@github.com:wagoner47/clhs_py.git
 
-.. code-block:: bash
+#. Move into the new directory
 
-    python -m venv .venv
-    source .venv/bin/activate
-    python -m pip install -e ".[test]"
-    python -m pytest
+   .. code-block:: bash
 
-Build distributions
---------------------
+      $ cd clhs_py
+
+#. Run the setup script
+
+   .. code-block:: bash
+
+      $ python setup.py install
+
+You may also supply the `--user` option to install for a single user (which is
+helpful if you don't have admin/root privledges, for instance)
 
 .. code-block:: bash
 
-    python -m pip install build
-    python -m build
+   $ python setup.py install --user
 
-This writes a wheel and a source distribution to ``dist/``. Build and test
-tools are separate from the package's runtime dependencies.
+
+Other options are also available for the setup script. To see all of them with
+documentation, use
+
+.. code-block:: bash
+
+   $ python setup.py install --help
